@@ -8,6 +8,9 @@ var bombs           = 10;
 var flags_left      = 10;
 var completed       = false;
 
+var current_mouse_x = 0;
+var current_mouse_y = 0;
+
 var BlockState = {
     idle:  1,
     hover: 2,
@@ -66,9 +69,27 @@ function draw()
     }
 }
 
+function mouseMove(event)
+{
+    var mouse_x = event.clientX;
+    var mouse_y = event.clientY;
+
+    if(mouse_x > 640 || mouse_x < 0 || mouse_y < 0 || mouse_y > 640){
+        for(i = 0; i < board_width * board_height; i++){board[i].state = BlockState.idle;}
+        return;
+    }
+
+    for(y = 0; y < board_height; y++){
+        for(x = 0; x < board_width; x++){
+            
+        }
+    }
+}
+canvas.onmousemove = mouseMove;
+
 function update()
 {
-
+    
 }
 
 function mainloop()
