@@ -63,8 +63,8 @@ function draw()
 
     for(y = 0; y < board_height; y++){
         for(x = 0; x < board_width; x++){
-            if(board[y * board_width + x].flagged == true)          {ctx.fillStyle ="yellow";}
             if(board[y * board_width + x].state == BlockState.idle ){ctx.fillStyle =  "grey";}
+            if(board[y * board_width + x].flagged == true)          {ctx.fillStyle ="yellow";}    
             if(board[y * board_width + x].state == BlockState.hover){ctx.fillStyle = "green";}
             if(board[y * board_width + x].state == BlockState.push ){ctx.fillStyle = "black";}
             ctx.fillRect(x * 21, y * 21, 20, 20);
@@ -85,20 +85,29 @@ function mouseMove(event)
     var temp_x = Math.floor((mouse_x - 8) / 21);
     var temp_y = Math.floor((mouse_y - 8) / 21);
 
-    for(i = 0; i < board_width * board_height; i++){board[i].state = BlockState.idle;}
+    for(i = 0; i < board_width * board_height; i++){
+        if(board[i].state != BlockState.push){board[i].state = BlockState.idle;}
+    }
+
     board[temp_y * board_width + temp_x].state = BlockState.hover;
 }
 canvas.onmousemove = mouseMove;
 
 function mouseClick(event)
 {
-    if(event.which == 1){
+    if(event.which == 3){
         for(i = 0; i < board_height * board_width; i++){
             if(board[i].state == BlockState.hover){board[i].flagged = true;}
+            
         }
+
+
     }
+
+    console.log(event.which);
+    
 }
-canvas.onclick = mouseClick;
+canvas.addEventListener('mouseup', mouseClick);
 
 function update()
 {
