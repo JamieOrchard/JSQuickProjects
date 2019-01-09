@@ -103,9 +103,21 @@ function r_scan(_pos)
         r_scan(_pos - board_width);
 
         if((_pos % board_width) != 0){r_scan((_pos - board_width) -1);}
+        if(_pos != ((Math.floor(_pos / board_width) + 1) * board_width) - 1){r_scan((_pos - board_width) +1);}
     }
 
     if((_pos % board_width) != 0){r_scan(_pos -1);}
+    if(_pos != ((Math.floor(_pos / board_width) + 1) * board_width) - 1){r_scan(_pos +1);}
+
+    //  (((Math.floor(_pos / board_width) + 1) * board_width) - 1) Gets the right most side of the current line in the grid
+
+    if(_pos < (board_width * board_height) - board_width){
+        board[_pos].state = BlockState.push;
+        r_scan(_pos + board_width);
+
+        if((_pos % board_width) != 0){r_scan((_pos + board_width) -1);}
+         if(_pos != ((Math.floor(_pos / board_width) + 1) * board_width) - 1){r_scan((_pos + board_width) +1);}
+    }
 
 
 }
@@ -137,13 +149,13 @@ function draw()
             ctx.fillStyle = "red";
             ctx.fillText(board[y * board_width + x].value, (x * 21) + 8, (y * 21) + 15 );
         }
-        /*
+        
         if((board[y * board_width + x].state & BlockState.push) == BlockState.push){
             ctx.fillStyle = "yellow";
             ctx.fillText(board[y * board_width + x].value, (x * 21) + 8, (y * 21) + 15 );
-        }*/
+        }/*
         ctx.fillStyle = "yellow";
-        ctx.fillText(board[y * board_width + x].value, (x * 21) + 8, (y * 21) + 15 );
+        ctx.fillText(board[y * board_width + x].value, (x * 21) + 8, (y * 21) + 15 );*/
 
     }
     }
@@ -194,7 +206,19 @@ canvas.addEventListener('mouseup', mouseClick);
 
 function update()
 {
-    
+    is_completed = true;
+
+    for(i = 0; i < board_width * board_height; i++){
+        if(board[i].armed == true){continue;}
+
+        if(((board[i].state & BlockState.push) != BlockState.push && (board[i].state & BlockState.flagged) != BlockState.flagged)){
+            is_completed = false;
+        }
+    }
+
+    if(is_completed == true){
+        console.log("congratz");
+    }
 }
 
 start_game = false;
