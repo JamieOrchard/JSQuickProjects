@@ -4,12 +4,14 @@ var ctx    = canvas.getContext("2d");
 var board_width     = 20;
 var board_height    = 20;
 
-var bombs           = 40;
-var flags_left      = 10;
+var bombs           = 99;
+var flags_left      = bombs;
 var completed       = false;
 
 var current_mouse_x = 0;
 var current_mouse_y = 0;
+
+var texture = document.getElementById("texture");
 
 var BlockState = {
     idle:    1,
@@ -18,17 +20,24 @@ var BlockState = {
     flagged: 8
 };
 
+var GameState = {
+    start:      1,
+    continue:   2,
+    win:        3,
+    loss:       4,  
+};
+
+var current_state = GameState.start;
+
 
 class Block{
     //Hover, Push, Idle
 
-    armBlock(){
-        this.armed =  true;
-    }
-
     reset(){
         this.armed = false;
-        this.hover = false;
+        this.state = BlockState.idle;
+        this.ffchecked = false;
+        this.value = 0;
     }
 
     //
@@ -38,53 +47,62 @@ class Block{
         this.ffchecked  = false;
         this.value      = 0;
     }
+
+
 }
 
 var board = [];
 for(i = 0; i < board_width * board_height; i++){board.push(new Block());}
 
-function reset()
+function restart(_pos)
 {
-    
-    var current_bomb_count = bombs;
-
     var random = 0;
 
-    for(i = 0; i < current_bomb_count; i++){
+    for(i = 0; i < board_width * board_height; i++){
+        if((board[i].state & BlockState.flagged) == BlockState.flagged){continue;}
+        board[i].reset();
+    }
+    if(_pos != -1){board[_pos].state = BlockState.hover;}
+
+    for(i = 0; i < bombs; i++){
         do{
             random = Math.floor(Math.random() * (board_width * board_height));
-            console.log(random);
-        }while(board[random].armed == true);
-        board[random].armBlock();
-    }
-
-    for(y = 0; y < board_height; y++){
-    for(x = 0; x < board_width; x++){
-        if(board[y * board_width + x].armed == true){continue;}
-
-        if(y > 0){
-            if(board[(y-1) * board_width + x].armed == true){board[y * board_width + x].value += 1;}
-            if(x > 0){
-                if(board[(y-1) * board_width + (x-1)].armed == true){board[y * board_width + x].value += 1;}}
-            if(x < board_width - 1){
-                if(board[(y-1) * board_width + (x+1)].armed == true){board[y * board_width + x].value += 1;}}
-        }
-
-        if(x > 0){
-            if(board[y * board_width + (x-1)].armed == true){board[y * board_width + x].value += 1;}}
-        if(x < board_width - 1){
-            if(board[y * board_width + (x+1)].armed == true){board[y * board_width + x].value += 1;}}
-
-        if(y < board_height - 1){
-            if(board[(y+1) * board_width + x].armed == true){board[y * board_width + x].value += 1;}
-            if(x > 0){
-                if(board[(y+1) * board_width + (x-1)].armed == true){board[y * board_width + x].value += 1;}}
-            if(x < board_width - 1){
-                if(board[(y+1) * board_width + (x+1)].armed == true){board[y * board_width + x].value += 1;}}
-        }
-    }
+            //console.log(random);
+        }while(board[random].armed == true || random == _pos );
+        board[random].armed = true;
     }
     
+    for(y = 0; y < board_height; y++){
+        for(x = 0; x < board_width; x++){
+            if(board[y * board_width + x].armed == true){continue;}
+
+            if(y > 0){
+                if(board[(y-1) * board_width + x].armed == true){board[y * board_width + x].value += 1;}
+                if(x > 0){
+                    if(board[(y-1) * board_width + (x-1)].armed == true){board[y * board_width + x].value += 1;}}
+                if(x < board_width - 1){
+                    if(board[(y-1) * board_width + (x+1)].armed == true){board[y * board_width + x].value += 1;}}
+            }
+
+            if(x > 0){
+                if(board[y * board_width + (x-1)].armed == true){board[y * board_width + x].value += 1;}}
+                if(x < board_width - 1){
+                    if(board[y * board_width + (x+1)].armed == true){board[y * board_width + x].value += 1;}}
+
+                if(y < board_height - 1){
+                    if(board[(y+1) * board_width + x].armed == true){board[y * board_width + x].value += 1;}
+                    if(x > 0){
+                        if(board[(y+1) * board_width + (x-1)].armed == true){board[y * board_width + x].value += 1;}}
+                    if(x < board_width - 1){
+                        if(board[(y+1) * board_width + (x+1)].armed == true){board[y * board_width + x].value += 1;}}
+                }
+                console.log("HH: " + _pos);
+        }
+    }
+
+    console.log("HHH: " + _pos.toString());
+
+    return _pos;
 }
 
 var arra = [(-board_width - 1), -board_width, (-board_width + 1), -1, +1, (board_width - 1), board_width, (board_width + 1)]
@@ -131,11 +149,11 @@ function draw()
 
     for(y = 0; y < board_height; y++){
     for(x = 0; x < board_width;  x++){
-        if((board[y * board_width + x].state & BlockState.idle) == BlockState.idle )     { ctx.fillStyle =  "grey"; }   
-        if((board[y * board_width + x].state & BlockState.flagged) == BlockState.flagged){ ctx.fillStyle ="yellow"; } 
-        if((board[y * board_width + x].state & BlockState.push) == BlockState.push)      { ctx.fillStyle = "black"; }
-        if((board[y * board_width + x].state & BlockState.hover) == BlockState.hover)    { ctx.fillStyle = "green"; }
-        ctx.fillRect(x * 21, y * 21, 20, 20);
+        ctx.drawImage(texture, 0, 0, 32, 32, x * 21, y * 21, 20, 20);
+        //if((board[y * board_width + x].state & BlockState.idle) == BlockState.idle )     { ctx.fillStyle =  "grey"; }   
+        if((board[y * board_width + x].state & BlockState.flagged) == BlockState.flagged){ ctx.drawImage(texture, 64, 0, 32, 32, x * 21, y * 21, 20, 20);} 
+        if((board[y * board_width + x].state & BlockState.push) == BlockState.push)      { ctx.drawImage(texture, 32, 0, 32, 32, x * 21, y * 21, 20, 20);}
+        if((board[y * board_width + x].state & BlockState.hover) == BlockState.hover)    { ctx.fillStyle = "green"; ctx.fillRect(x * 21, y * 21, 20, 20);}
     }
     }
 
@@ -145,12 +163,14 @@ function draw()
 
     for(y = 0; y < board_height; y++){
     for(x = 0; x < board_width;  x++){
-        if(board[y * board_width + x].armed == true){
-            ctx.fillStyle = "red";
-            ctx.fillText(board[y * board_width + x].value, (x * 21) + 8, (y * 21) + 15 );
-        }
         
         if((board[y * board_width + x].state & BlockState.push) == BlockState.push){
+            if(board[y * board_width + x].armed == true){
+                ctx.fillStyle = "red";
+                ctx.fillText("X", (x * 21) + 8, (y * 21) + 15 );
+            }
+            
+            if(board[y * board_width + x].value == 0){continue;}
             ctx.fillStyle = "yellow";
             ctx.fillText(board[y * board_width + x].value, (x * 21) + 8, (y * 21) + 15 );
         }/*
@@ -159,6 +179,11 @@ function draw()
 
     }
     }
+
+    ctx.font = "32px MS-ComicSans"
+    ctx.fillStyle = "yellow";
+    ctx.fillText("Bombs: " + bombs, 20, 460);
+    ctx.fillText("Flags: " + flags_left, 270, 460);
 }
 
 function mouseMove(event)
@@ -183,6 +208,7 @@ canvas.onmousemove = mouseMove;
 
 function mouseClick(event)
 {
+    //Mouse RightClick
     if(event.which == 3){
         for(i = 0; i < board_height * board_width; i++){
             if((board[i].state & BlockState.hover) == BlockState.hover){board[i].state |= BlockState.flagged;}
@@ -190,16 +216,20 @@ function mouseClick(event)
         }
     }
 
+    //Mouse LeftClick
     if(event.which == 1){
         for(i = 0; i < board_height * board_width; i++){
             if((board[i].state & BlockState.hover) == BlockState.hover){
+                if(current_state == GameState.start){
+                    i = restart(i) // forsome reason the program forgets i exist 
+                    current_state = GameState.continue;
+                }
                 board[i].state = BlockState.push;
                 if(board[i].value == 0){r_scan(i);}
             }
         }
     }
 
-    console.log(event.which); 
 }
 
 canvas.addEventListener('mouseup', mouseClick);
@@ -219,20 +249,24 @@ function update()
     if(is_completed == true){
         console.log("congratz");
     }
+
+    flags_left = bombs;
+    for(i = 0; i < bombs; i++){
+        if((board[i].state & BlockState.flagged) == BlockState.flagged){
+            flags_left--;
+            console.log("FLAG FOUND");
+        }
+    }
 }
 
-start_game = false;
+
 
 function mainloop()
 {
-    if(start_game == false){
-        reset();
-        start_game = true;
-    }
     update();
     draw();
     requestAnimationFrame(mainloop);
 }
 
-//reset();
+//restart(-1);
 requestAnimationFrame(mainloop);
