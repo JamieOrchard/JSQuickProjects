@@ -52,19 +52,19 @@ class Block{
 }
 
 var board = [];
-for(i = 0; i < board_width * board_height; i++){board.push(new Block());}
+for(let i = 0; i < board_width * board_height; i++){board.push(new Block());}
 
 function restart(_pos)
 {
     var random = 0;
 
-    for(i = 0; i < board_width * board_height; i++){
+    for(let i = 0; i < board_width * board_height; i++){
         if((board[i].state & BlockState.flagged) == BlockState.flagged){continue;}
         board[i].reset();
     }
     if(_pos != -1){board[_pos].state = BlockState.hover;}
 
-    for(i = 0; i < bombs; i++){
+    for(let i = 0; i < bombs; i++){
         do{
             random = Math.floor(Math.random() * (board_width * board_height));
             //console.log(random);
@@ -72,8 +72,8 @@ function restart(_pos)
         board[random].armed = true;
     }
     
-    for(y = 0; y < board_height; y++){
-        for(x = 0; x < board_width; x++){
+    for(let y = 0; y < board_height; y++){
+        for(let x = 0; x < board_width; x++){
             if(board[y * board_width + x].armed == true){continue;}
 
             if(y > 0){
@@ -147,8 +147,8 @@ function draw()
     var x = 0;
     var y = 0;
 
-    for(y = 0; y < board_height; y++){
-    for(x = 0; x < board_width;  x++){
+    for(let y = 0; y < board_height; y++){
+    for(let x = 0; x < board_width;  x++){
         ctx.drawImage(texture, 0, 0, 32, 32, x * 21, y * 21, 20, 20);
         //if((board[y * board_width + x].state & BlockState.idle) == BlockState.idle )     { ctx.fillStyle =  "grey"; }   
         if((board[y * board_width + x].state & BlockState.flagged) == BlockState.flagged){ ctx.drawImage(texture, 64, 0, 32, 32, x * 21, y * 21, 20, 20);} 
@@ -161,8 +161,8 @@ function draw()
 
     
 
-    for(y = 0; y < board_height; y++){
-    for(x = 0; x < board_width;  x++){
+    for(let y = 0; y < board_height; y++){
+    for(let x = 0; x < board_width;  x++){
         
         if((board[y * board_width + x].state & BlockState.push) == BlockState.push){
             if(board[y * board_width + x].armed == true){
@@ -221,7 +221,7 @@ function mouseClick(event)
         for(i = 0; i < board_height * board_width; i++){
             if((board[i].state & BlockState.hover) == BlockState.hover){
                 if(current_state == GameState.start){
-                    i = restart(i) // forsome reason the program forgets i exist 
+                    restart(i)
                     current_state = GameState.continue;
                 }
                 board[i].state = BlockState.push;
