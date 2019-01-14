@@ -1,10 +1,11 @@
+//Global Variables needed
 var canvas = document.getElementById("gamecanvas");
 var ctx    = canvas.getContext("2d");
 
 var board_width     = 20;
 var board_height    = 20;
 
-var bombs           = 99;
+var bombs           = 70;
 var flags_left      = bombs;
 var completed       = false;
 
@@ -31,7 +32,6 @@ var current_state = GameState.start;
 
 
 class Block{
-    //Hover, Push, Idle
 
     reset(){
         this.armed = false;
@@ -40,7 +40,6 @@ class Block{
         this.value = 0;
     }
 
-    //
     constructor(){
         this.armed      = false;
         this.state      = BlockState.idle;
@@ -51,6 +50,7 @@ class Block{
 
 }
 
+//Creating and resetting the game board
 var board = [];
 for(let i = 0; i < board_width * board_height; i++){board.push(new Block());}
 
@@ -96,16 +96,13 @@ function restart(_pos)
                     if(x < board_width - 1){
                         if(board[(y+1) * board_width + (x+1)].armed == true){board[y * board_width + x].value += 1;}}
                 }
-                console.log("HH: " + _pos);
         }
     }
-
-    console.log("HHH: " + _pos.toString());
 
     return _pos;
 }
 
-var arra = [(-board_width - 1), -board_width, (-board_width + 1), -1, +1, (board_width - 1), board_width, (board_width + 1)]
+
 function r_scan(_pos)
 {
     if(board[_pos].ffchecked == true){return;}
@@ -149,8 +146,7 @@ function draw()
 
     for(let y = 0; y < board_height; y++){
     for(let x = 0; x < board_width;  x++){
-        ctx.drawImage(texture, 0, 0, 32, 32, x * 21, y * 21, 20, 20);
-        //if((board[y * board_width + x].state & BlockState.idle) == BlockState.idle )     { ctx.fillStyle =  "grey"; }   
+        ctx.drawImage(texture, 0, 0, 32, 32, x * 21, y * 21, 20, 20);  
         if((board[y * board_width + x].state & BlockState.flagged) == BlockState.flagged){ ctx.drawImage(texture, 64, 0, 32, 32, x * 21, y * 21, 20, 20);} 
         if((board[y * board_width + x].state & BlockState.push) == BlockState.push)      { ctx.drawImage(texture, 32, 0, 32, 32, x * 21, y * 21, 20, 20);}
         if((board[y * board_width + x].state & BlockState.hover) == BlockState.hover)    { ctx.fillStyle = "green"; ctx.fillRect(x * 21, y * 21, 20, 20);}
@@ -159,24 +155,39 @@ function draw()
 
     ctx.font = "10px Arial";
 
-    
-
     for(let y = 0; y < board_height; y++){
     for(let x = 0; x < board_width;  x++){
-        
+
+        if(current_state == GameState.loss){
+            if(board[y * board_width + x].armed == true){
+                board[y * board_width + x].state |= BlockState.push;
+                if((board[y * board_width + x].state & BlockState.flagged) == BlockState.flagged){
+                    ctx.drawImage(texture, 96, 0, 32, 32, (x * 21), (y * 21) + 2, 18, 18);
+                    continue;
+                }
+                else{
+                    ctx.drawImage(texture, 0, 32, 32, 32, (x * 21), (y * 21) + 2, 18, 18);
+                    continue;
+                }
+            }
+            else{board[y * board_width + x].state = BlockState.push;}
+        }
+
+        else if(current_state == GameState.win){
+            if(board[y * board_width + x].armed == true){board[y * board_width + x].state = BlockState.flagged;}
+        }
+
         if((board[y * board_width + x].state & BlockState.push) == BlockState.push){
             if(board[y * board_width + x].armed == true){
-                ctx.fillStyle = "red";
-                ctx.fillText("X", (x * 21) + 8, (y * 21) + 15 );
+                ctx.drawImage(texture, 0, 32, 32, 32, (x * 21), (y * 21) + 2, 18, 18);
+                continue;
             }
             
             if(board[y * board_width + x].value == 0){continue;}
             ctx.fillStyle = "yellow";
             ctx.fillText(board[y * board_width + x].value, (x * 21) + 8, (y * 21) + 15 );
-        }/*
-        ctx.fillStyle = "yellow";
-        ctx.fillText(board[y * board_width + x].value, (x * 21) + 8, (y * 21) + 15 );*/
-
+            continue;
+        }
     }
     }
 
@@ -184,6 +195,12 @@ function draw()
     ctx.fillStyle = "yellow";
     ctx.fillText("Bombs: " + bombs, 20, 460);
     ctx.fillText("Flags: " + flags_left, 270, 460);
+
+    face = ":|"
+    if(current_state == GameState.loss){face = ":(";}
+    else if(current_state == GameState.win){face = ":)";}
+
+    ctx.fillText(face, 200, 460);
 }
 
 function mouseMove(event)
@@ -211,7 +228,7 @@ function mouseClick(event)
     //Mouse RightClick
     if(event.which == 3){
         for(i = 0; i < board_height * board_width; i++){
-            if((board[i].state & BlockState.hover) == BlockState.hover){board[i].state |= BlockState.flagged;}
+            if((board[i].state & BlockState.hover) == BlockState.hover){board[i].state ^= BlockState.flagged;}
             
         }
     }
@@ -226,6 +243,7 @@ function mouseClick(event)
                 }
                 board[i].state = BlockState.push;
                 if(board[i].value == 0){r_scan(i);}
+                if(board[i].armed == true){current_state = GameState.loss;}
             }
         }
     }
@@ -247,19 +265,16 @@ function update()
     }
 
     if(is_completed == true){
-        console.log("congratz");
+        if(current_state != GameState.loss){current_state = GameState.win;}
     }
 
     flags_left = bombs;
-    for(i = 0; i < bombs; i++){
+    for(i = 0; i < board_width * board_height; i++){
         if((board[i].state & BlockState.flagged) == BlockState.flagged){
             flags_left--;
-            console.log("FLAG FOUND");
         }
     }
 }
-
-
 
 function mainloop()
 {
@@ -268,5 +283,4 @@ function mainloop()
     requestAnimationFrame(mainloop);
 }
 
-//restart(-1);
 requestAnimationFrame(mainloop);
